@@ -1,0 +1,52 @@
+---
+version: 0.1
+globalTimeout: 150
+testSuiteTimeout: 150
+testSuiteStep: 150
+
+runson: win
+autosplit: false
+retryOnFailure: true
+
+maxRetries: 3
+concurrency: 1
+
+tunnel: false
+
+env:
+  # PAT: ${{ .secrets.testKey }}
+  CACHE_DIR: m2_cache_dir
+
+cacheKey: '{{ checksum "pom.xml" }}'
+cacheDirectories:
+  - $CACHE_DIR
+
+matrix:
+  xmlFile: ["RegressionSuite"]
+  
+runtime:
+  language: java
+  version: 11
+
+# Pre-execution steps
+pre:
+  - mkdir m2_cache_dir
+  - mvn -Dmaven.repo.local=$CACHE_DIR -Dmaven.test.skip=true clean install
+
+# Test suite execution: Corrected mvn command syntax
+testSuites:
+  - mvn test -Dtestngxml=$xmlFile
+
+# Post-execution step: Remove the demo.txt file after the tests are executed
+post:
+  - rm -f demo.txt
+
+# Report configuration
+report: true
+partialReports:
+  location: target/surefire-reports/html
+  type: html
+  frameworkName: extent
+
+# Job label for identification
+jobLabel: [TestOnWindows]

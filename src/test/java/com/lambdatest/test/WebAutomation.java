@@ -12,12 +12,15 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.edge.EdgeOptions;
+import org.openqa.selenium.remote.AbstractDriverOptions;
 import org.openqa.selenium.remote.RemoteWebDriver;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
 public class WebAutomation {
@@ -26,23 +29,38 @@ public class WebAutomation {
 	private String Status = "failed";
 
 	@BeforeMethod
-	public void setup() throws MalformedURLException {
+	@Parameters({ "browser", "version", "platform" })
+	public void setup(String browser, String version, String platform) throws MalformedURLException {
 		String LT_USERNAME = "sanoj.swaminathan";
-		String LT_ACCESS_KEY = "E8ynTTcTwjRcNXLZmhdv03LAbZhRMxlFN8YyWko4n9CGWsHstZ";
+		String LT_ACCESS_KEY = "Kc7tZLfuVmz65AdK0j960CYlusuyaJ8SaKm4tCPdWcVk7dUDDH";
 		String hub = "@hub.lambdatest.com/wd/hub";
 
-		ChromeOptions browserOptions = new ChromeOptions();
-		browserOptions.setPlatformName("Windows 10");
-		browserOptions.setBrowserVersion("114.0");
-		HashMap<String, Object> ltOptions = new HashMap<String, Object>();
+		// Set browser options based on parameters
+
+		AbstractDriverOptions browserOptions = null;
+		if (browser.toLowerCase().contains("chrome")) {
+			browserOptions = new ChromeOptions();
+		} else if (browser.toLowerCase().equals("microsoftedge")) {
+			browserOptions = new EdgeOptions();
+		} else {
+			System.exit(0);
+		}
+		browserOptions.setPlatformName(platform);
+		browserOptions.setBrowserVersion(version);
+		HashMap<String, Object> ltOptions = new HashMap<>();
 		ltOptions.put("project", "Sample");
 		ltOptions.put("w3c", true);
-		ltOptions.put("plugin", "java-testNG");
+		ltOptions.put("visual", true);
+		ltOptions.put("video", true);
+		ltOptions.put("network", true);
+		ltOptions.put("console", "true");
+		ltOptions.put("build", "Sample Build");
+		ltOptions.put("name", "Sample Test");
 		browserOptions.setCapability("LT:Options", ltOptions);
 		driver = new RemoteWebDriver(new URL("https://" + LT_USERNAME + ":" + LT_ACCESS_KEY + hub), browserOptions);
 	}
 
-	@Test
+	@Test()
 	public void lambdaTestSample() throws InterruptedException {
 		System.out.println("Navigate to https://www.lambdatest.com");
 		driver.get("https://www.lambdatest.com");
@@ -50,7 +68,7 @@ public class WebAutomation {
 		wait.until(ExpectedConditions.presenceOfAllElementsLocatedBy(By.cssSelector("*")));
 
 		WebElement lnkSeeAllIntegrations = wait.until(ExpectedConditions
-				.visibilityOfElementLocated(By.xpath("//div//div//a[text()='See All Integrations']")));
+				.visibilityOfElementLocated(By.xpath("//div//div//a[text()='Explore all Integrations']")));
 		JavascriptExecutor executor = (JavascriptExecutor) driver;
 		executor.executeScript("arguments[0].click();", lnkSeeAllIntegrations);
 
@@ -59,14 +77,11 @@ public class WebAutomation {
 		for (String handle : windowHandlesList) {
 			System.out.println("Window handle name is : " + handle);
 		}
-		Assert.assertEquals(driver.getCurrentUrl(), "https://www.lambdatest.com/integrations", "Urls are not matches");
-		driver.close();
+		Assert.assertEquals(driver.getCurrentUrl(), "https://www.lambdatest.com/integrations", "Urls do not match");
 	}
 
 	@AfterMethod
 	public void tearDown() {
-		driver.executeScript("lambda-status=" + Status);
-		driver.quit();
+		driver.close();
 	}
-
 }
